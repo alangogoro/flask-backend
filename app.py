@@ -2,6 +2,9 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -9,6 +12,10 @@ CORS(app)
 LINE_API_URL = "https://api.line.me/v2/bot/message/push"
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
 LINE_USER_ID = os.getenv('LINE_USER_ID')
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    return jsonify({"success": True}), 200
 
 @app.route('/api/send-to-line', methods=['POST'])
 def send_to_line():
