@@ -29,6 +29,10 @@ def get_google_sheet():
 
 def format_menu_data(worksheet):
     data = worksheet.get_all_records()
+
+    cell = worksheet.acell('F2').value
+    interval = int(cell.replace('分鐘', '')) if cell else 0
+
     categories = {}
 
     for row in data:
@@ -70,10 +74,14 @@ def get_menu():
         gc = get_google_sheet()
         sheet = gc.open_by_key(os.getenv('SHEET_ID'))
         worksheet = sheet.sheet1
+
+        cell = worksheet.acell('F2').value
+        interval = int(cell.replace('分鐘', '')) if cell else 0
         
         return jsonify({
             "categories": format_menu_data(worksheet),
-            "seasoning": FIXED_SEASONING
+            "seasoning": FIXED_SEASONING,
+            "interval": interval
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
