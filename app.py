@@ -129,15 +129,54 @@ def update_prep_time_api():
 def send_to_line():
     try:
         data = request.json
-        order_text = data.get('order')
-        
+
+        customer_lines = [f"名稱：{data['customer']['name']}"]
+        if 'pickupTime' in data['customer'] and data['customer']['pickupTime']:
+            customer_lines.append(f"取餐時間：{data['customer']['pickupTime']}")
+        if 'notes' in data['customer'] and data['customer']['notes']:
+            customer_lines.append(f"⭐️備註：{data['customer']['notes']}")
+
+        seasoning_lines = [f"🌶️辣度：{data['seasoning']['spiciness']}"]
+        if 'powder' in data['seasoning'] and data['seasoning']['powder'] != '未選':
+            seasoning_lines.append(f"🧂粉類：{data['seasoning']['powder']}")
+        if 'toppings' in data['seasoning'] and data['seasoning']['toppings']:
+            seasoning_lines.append(f"✨配料：{', '.join(data['seasoning']['toppings'])}")
+
+#         order_text = f"""
+# ==== 訂單內容 ====
+# {'\n'.join(customer_lines)}
+
+# {format_items(data['items'])}
+
+# --- 調味選擇 ---
+# {'\n'.join(seasoning_lines)}
+
+# 試算金額：${data['total']}
+# """.strip()
+
+        order_text = '\n'.join([
+            "==== 訂單內容 ====",
+            '\n'.join(customer_lines),
+            "",
+            format_items(data['items']),
+            "",
+            "---- 調味選擇 ----",
+            '\n'.join(seasoning_lines),
+            "",
+            f"試算金額：${data['total']}"
+        ]).strip()
+
+        # 推送 Line
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"
         }
         payload = {
             "to": LINE_USER_ID,
-            "messages": [{"type": "text", "text": order_text}]
+            "messages": [{
+                "type": "text",
+                "text": order_text
+            }]
         }
         response = requests.post(LINE_API_URL, json=payload, headers=headers)
         response.raise_for_status()
@@ -145,6 +184,13 @@ def send_to_line():
         return jsonify({"success": True}), 200
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+def format_items(items):
+    """格式化商品明细"""
+    return "\n".join([
+        f"{item['name']}{' (' + item['size'] + ')' if 'size' in item else ''} x{item['quantity']}"
+        for item in items
+    ])
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
