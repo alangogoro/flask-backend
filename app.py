@@ -133,14 +133,14 @@ def send_to_line():
         customer_lines = [f"名稱：{data['customer']['name']}"]
         if 'pickupTime' in data['customer'] and data['customer']['pickupTime']:
             customer_lines.append(f"取餐時間：{data['customer']['pickupTime']}")
-        if 'notes' in data['customer'] and data['customer']['notes']:
-            customer_lines.append(f"⭐️備註：{data['customer']['notes']}")
 
         seasoning_lines = [f"🌶️辣度：{data['seasoning']['spiciness']}"]
         if 'powder' in data['seasoning'] and data['seasoning']['powder'] != '未選':
             seasoning_lines.append(f"🧂粉類：{data['seasoning']['powder']}")
         if 'toppings' in data['seasoning'] and data['seasoning']['toppings']:
             seasoning_lines.append(f"✨配料：{', '.join(data['seasoning']['toppings'])}")
+        if 'notes' in data['seasoning'] and data['seasoning']['notes']:
+            seasoning_lines.append(f"‼️備註：{data['seasoning']['notes']}")
 
 #         order_text = f"""
 # ==== 訂單內容 ====
@@ -172,7 +172,7 @@ def send_to_line():
             "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"
         }
         payload = {
-            "to": LINE_USER_ID,
+            "to": f"{LINE_USER_ID}",
             "messages": [{
                 "type": "text",
                 "text": order_text
