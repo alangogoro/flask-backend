@@ -131,8 +131,10 @@ def send_to_line():
         data = request.json
 
         customer_lines = [f"名稱：{data['customer']['name']}"]
+        if 'phone' in data['customer'] and data['customer']['phone']:
+            customer_lines.append(f"📞電話：{data['customer']['phone']}")
         if 'pickupTime' in data['customer'] and data['customer']['pickupTime']:
-            customer_lines.append(f"取餐時間：{data['customer']['pickupTime']}")
+            customer_lines.append(f"⏰取餐時間：{data['customer']['pickupTime']}")
 
         seasoning_lines = [f"🌶️辣度：{data['seasoning']['spiciness']}"]
         if 'powder' in data['seasoning'] and data['seasoning']['powder'] != '未選':
