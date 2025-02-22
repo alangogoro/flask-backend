@@ -132,17 +132,18 @@ def send_to_line():
 
         customer_lines = [f"名稱：{data['customer']['name']}"]
         if 'phone' in data['customer'] and data['customer']['phone']:
-            customer_lines.append(f"📞電話：{data['customer']['phone']}")
+            customer_lines.append(f"電話：{data['customer']['phone']}")
         if 'pickupTime' in data['customer'] and data['customer']['pickupTime']:
-            customer_lines.append(f"⏰取餐時間：{data['customer']['pickupTime']}")
+            customer_lines.append(f"取餐時間：{data['customer']['pickupTime']}")
 
         seasoning_lines = [f"🌶️辣度：{data['seasoning']['spiciness']}"]
         if 'powder' in data['seasoning'] and data['seasoning']['powder'] != '未選':
             seasoning_lines.append(f"🧂粉類：{data['seasoning']['powder']}")
         if 'toppings' in data['seasoning'] and data['seasoning']['toppings']:
-            seasoning_lines.append(f"✨配料：{', '.join(data['seasoning']['toppings'])}")
+            seasoning_lines.append(f"✨配料：{'・'.join(data['seasoning']['toppings'])}")
         if 'notes' in data['seasoning'] and data['seasoning']['notes']:
-            seasoning_lines.append(f"‼️備註：{data['seasoning']['notes']}")
+            seasoning_lines.append('')
+            seasoning_lines.append(f"📝備註：\n{data['seasoning']['notes']}")
 
 #         order_text = f"""
 # ==== 訂單內容 ====
