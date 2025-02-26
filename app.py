@@ -3,8 +3,12 @@ import requests
 import gspread
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import hmac
+import hashlib
+import base64
 from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
 
@@ -13,6 +17,7 @@ CORS(app)
 
 LINE_API_URL = "https://api.line.me/v2/bot/message/push"
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
+LINE_CHANNEL_SECRET = os.getenv('LINE_CHANNEL_SECRET')
 LINE_USER_ID = os.getenv('LINE_USER_ID')
 
 FIXED_SEASONING = {
@@ -20,6 +25,59 @@ FIXED_SEASONING = {
     "powderOptions": ["未選", "胡椒粉", "梅粉"],
     "toppingOptions": ["蔥花", "蒜粒", "洋蔥", "九層塔"]
 }
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    print("收到 LINE 的 Webhook 請求！")
+    try:
+        # 取得 LINE 驗證簽章 (Base64)
+        signature = request.headers.get('X-Line-Signature', '')
+        if not signature:
+            return jsonify({"success": False, "message": "Missing signature"}), 400
+        
+        # 取得原始請求內容（必須保留原始 bytes）
+        body = request.get_data(as_text=False)
+        
+        # 使用 Channel Secret 計算 HMAC-SHA256
+        hash_digest = hmac.new(
+            LINE_CHANNEL_SECRET.encode('utf-8'),
+            body,
+            hashlib.sha256
+        ).digest()
+
+        # 將二進位結果轉為 Base64 字串
+        calculated_signature = base64.b64encode(hash_digest).decode('utf-8')
+
+        # 比對簽章是否相同
+        if not hmac.compare_digest(calculated_signature, signature):
+            print(f"[簽章不符] 計算值: {calculated_signature} vs LINE 值: {signature}")
+            return jsonify({"success": False, "message": "Invalid signature"}), 403
+        
+        # 解析 JSON 資料
+        data = request.get_json()
+        print("請求內容:", data)
+        
+        global ADMIN_USER_ID
+        
+        for event in data.get('events', []):
+            event_type = event.get('type')
+            user_id = event.get('source', {}).get('userId')
+            print(f"收到事件: {event_type}, UserID: {user_id}")
+            
+            # 當管理員「關注」官方帳號時，記錄 User ID
+            if event_type == 'follow':
+                ADMIN_USER_ID = user_id
+                print(f"Admin User ID 已儲存: {ADMIN_USER_ID}")
+            
+            # 當管理員傳送訊息時，也可記錄 User ID（可選）
+            elif event_type == 'message':
+                ADMIN_USER_ID = user_id
+                print(f"Admin User ID 已更新: {ADMIN_USER_ID}")
+        
+        return jsonify({"success": True}), 200
+    except Exception as e:
+        print(f"處理請求時發生錯誤: {str(e)}")
+        return jsonify({"success": False, "message": "Server error"}), 500
 
 def get_google_sheet():
     creds = Credentials.from_service_account_file('service-account.json')
@@ -63,10 +121,6 @@ def format_menu_data(worksheet):
         categories[category_name]['items'].append(item)
 
     return list(categories.values())
-
-@app.route('/webhook', methods=['POST'])
-def webhook():
-    return jsonify({"success": True}), 200
 
 @app.route('/api/kuasasiaola')
 def get_menu():
@@ -196,4 +250,4 @@ def format_items(items):
     ])
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)), debug=True)
