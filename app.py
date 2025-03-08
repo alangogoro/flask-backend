@@ -88,12 +88,13 @@ def get_google_sheet():
 def format_menu_data(worksheet):
     data = worksheet.get_all_records()
 
-    cell = worksheet.acell('F2').value
-    interval = int(cell.replace('分鐘', '')) if cell else 0
-
     categories = {}
 
     for row in data:
+        is_open = str(row.get('上架中', False)).lower() in ['true', '1', 'yes']
+        if not is_open:
+            continue
+
         category_name = row['分類']
         if category_name not in categories:
             categories[category_name] = {
@@ -250,4 +251,4 @@ def format_items(items):
     ])
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)), debug=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
