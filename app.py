@@ -130,10 +130,11 @@ def get_menu():
         sheet = gc.open_by_key(os.getenv('SHEET_ID'))
         worksheet = sheet.sheet1
 
-        cell = worksheet.acell('F2').value
-        interval = int(cell.replace('分鐘', '')) if cell else 0
+        opened = get_opened_status(worksheet)
+        interval = get_prep_time(worksheet)
         
         return jsonify({
+            "opened": opened,
             "categories": format_menu_data(worksheet),
             "seasoning": FIXED_SEASONING,
             "interval": interval
@@ -141,17 +142,6 @@ def get_menu():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-# 新增以下函數來讀取和更新 F2 欄位
-def get_prep_time(worksheet):
-    """讀取 F2 欄位的值（預設為 '0分鐘'）"""
-    cell = worksheet.acell('F2').value
-    # 移除「分鐘」文字並轉為整數
-    return int(cell.replace('分鐘', '')) if cell else 0
-
-def update_prep_time(worksheet, minutes):
-    """更新 F2 欄位的值（格式為 'X分鐘'）"""
-    worksheet.update_acell('F2', f'{minutes}分鐘')
-
 @app.route('/api/setting_time', methods=['GET'])
 def get_prep_time_api():
     try:
@@ -163,6 +153,12 @@ def get_prep_time_api():
         return jsonify({"interval": current_time})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+def get_prep_time(worksheet):
+    """讀取 F2 欄位的值（預設為 '0分鐘'）"""
+    cell = worksheet.acell('F2').value
+    # 移除「分鐘」文字並轉為整數
+    return int(cell.replace('分鐘', '')) if cell else 0
 
 @app.route('/api/setting_time', methods=['POST'])
 def update_prep_time_api():
@@ -179,6 +175,49 @@ def update_prep_time_api():
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+def update_prep_time(worksheet, minutes):
+    """更新 F2 欄位的值（格式為 'X分鐘'）"""
+    worksheet.update_acell('F2', f'{minutes}分鐘')
+
+@app.route('/api/setting_open', methods=['GET'])
+def get_opened():
+    try:
+        gc = get_google_sheet()
+        sheet = gc.open_by_key(os.getenv('SHEET_ID'))
+        worksheet = sheet.sheet1
+        
+        opened_status = get_opened_status(worksheet)
+        return jsonify({"opened": opened_status})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def get_opened_status(worksheet):
+    cell = worksheet.acell('G2').value
+    if isinstance(cell, bool):  # 處理CheckBox格式
+        status = cell
+    else:
+        status = str(cell).strip().upper() == "TRUE" if cell else True
+    return status
+
+@app.route('/api/setting_open', methods=['POST'])
+def update_opened_api():
+    try:
+        opened = request.json.get('opened')
+        if not isinstance(opened, bool):
+            return jsonify({"error": "Invalid opened value"}), 400
+
+        gc = get_google_sheet()
+        sheet = gc.open_by_key(os.getenv('SHEET_ID'))
+        worksheet = sheet.sheet1
+        
+        update_opened_status(worksheet, opened)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def update_opened_status(worksheet, opened):
+    worksheet.update_acell('G2', f'{opened}')
 
 @app.route('/api/send-to-line', methods=['POST'])
 def send_to_line():
