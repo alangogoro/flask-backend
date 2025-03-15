@@ -130,8 +130,8 @@ def get_menu():
         sheet = gc.open_by_key(os.getenv('SHEET_ID'))
         worksheet = sheet.sheet1
 
-        opened = get_opened_status(worksheet)
-        interval = get_prep_time(worksheet)
+        opened = get_opened_value(worksheet)
+        interval = get_prep_time_value(worksheet)
         
         return jsonify({
             "opened": opened,
@@ -149,12 +149,12 @@ def get_prep_time_api():
         sheet = gc.open_by_key(os.getenv('SHEET_ID'))
         worksheet = sheet.sheet1
         
-        current_time = get_prep_time(worksheet)
+        current_time = get_prep_time_value(worksheet)
         return jsonify({"interval": current_time})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-def get_prep_time(worksheet):
+def get_prep_time_value(worksheet):
     """讀取 F2 欄位的值（預設為 '0分鐘'）"""
     cell = worksheet.acell('F2').value
     # 移除「分鐘」文字並轉為整數
@@ -187,12 +187,12 @@ def get_opened():
         sheet = gc.open_by_key(os.getenv('SHEET_ID'))
         worksheet = sheet.sheet1
         
-        opened_status = get_opened_status(worksheet)
-        return jsonify({"opened": opened_status})
+        opened = get_opened_value(worksheet)
+        return jsonify({"opened": opened})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-def get_opened_status(worksheet):
+def get_opened_value(worksheet):
     cell = worksheet.acell('G2').value
     if isinstance(cell, bool):  # 處理CheckBox格式
         status = cell
